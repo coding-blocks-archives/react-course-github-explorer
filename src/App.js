@@ -1,5 +1,6 @@
 import React from 'react';
 import Search from './components/Search';
+import UserCard from './components/UserCard';
 
 class App extends React.Component {
   state = {
@@ -37,14 +38,17 @@ class App extends React.Component {
   };
 
   render() {
-    const { error, loading } = this.state;
+    const { error, loading, user } = this.state;
 
     return (
       <div>
         <Search fetchData={this.fetchUserData} />
-        <div className="text-center pt-5">
-          {loading && <p>Loading...</p>}
-          {error && <p className="text-danger">{error}</p>}
+        <div className="container">
+          <div className="text-center pt-5">
+            {loading && <p>Loading...</p>}
+            {error && <p className="text-danger">{error}</p>}
+          </div>
+          {!loading && !error && user && <UserCard user={user} />}
         </div>
       </div>
     );
