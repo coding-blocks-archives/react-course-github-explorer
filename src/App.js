@@ -3,7 +3,7 @@ import Search from './components/Search';
 import UserCard from './components/UserCard';
 import RepoCard from './components/RepoCard';
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 class App extends React.Component {
   state = {
@@ -11,6 +11,7 @@ class App extends React.Component {
     repos: [],
     userDataError: null,
     loading: false,
+    pageSize: '10',
     page: 1,
   };
 
@@ -28,14 +29,14 @@ class App extends React.Component {
   };
 
   fetchRepos = async username => {
-    const { page } = this.state;
+    const { pageSize, page } = this.state;
     const res = await fetch(
-      `https://api.github.com/users/${username}/repos?page=${page}&per_page=${PAGE_SIZE}`,
+      `https://api.github.com/users/${username}/repos?page=${page}&per_page=${pageSize}`,
     );
     if (res.ok) {
       const data = await res.json();
 
-      return { data, page: page + 1 };
+      return { data };
     }
 
     const error = (await res.json()).message;
@@ -55,7 +56,6 @@ class App extends React.Component {
           return this.setState({
             user: user.data,
             repos: repos.data,
-            page: repos.page,
             loading: false,
           });
         }
@@ -74,15 +74,29 @@ class App extends React.Component {
     });
   };
 
-  loadMore = async () => {
-    const { data, page } = await this.fetchRepos(this.state.user.login);
+  loadPage = async () => {
+    const { data } = await this.fetchRepos(
+      this.state.user.login,
+      this.state.page,
+    );
 
     if (data)
       this.setState(state => ({
-        repos: [...state.repos, ...data],
-        page,
+        repos: data,
       }));
   };
+
+  handlePageChange = page => {
+    this.setState({ page }, () => this.loadPage());
+  };
+
+  handlePageSizeChange = e =>
+    this.setState(
+      {
+        pageSize: e.target.value,
+      },
+      () => this.loadPage(),
+    );
 
   render() {
     const {
@@ -91,8 +105,10 @@ class App extends React.Component {
       loading,
       user,
       repos,
-      page,
+      pageSize,
     } = this.state;
+
+    const renderRepos = !loading && !reposError && !!repos.length;
 
     return (
       <div>
@@ -105,18 +121,37 @@ class App extends React.Component {
           {!loading && !userDataError && user && <UserCard user={user} />}
           {reposError && <p className="text-danger">{reposError}</p>}
 
-          {!loading &&
-            !reposError &&
-            repos.map(repo => <RepoCard key={repo.id} repo={repo} />)}
+          {renderRepos && (
+            <React.Fragment>
+              <div className="mb-4">
+                {[...new Array(Math.ceil(user.public_repos / pageSize))].map(
+                  (_, index) => (
+                    <button
+                      key={index}
+                      className="btn btn-success mr-2"
+                      onClick={() => this.handlePageChange(index + 1)}>
+                      {index + 1}
+                    </button>
+                  ),
+                )}
+              </div>
 
-          {!loading &&
-            !userDataError &&
-            user &&
-            (page - 1) * PAGE_SIZE < user.public_repos && (
-              <button className="btn btn-success" onClick={this.loadMore}>
-                Load More
-              </button>
-            )}
+              <div className="d-inline-block mb-4">
+                <select
+                  className="form-control"
+                  value={pageSize}
+                  onChange={this.handlePageSizeChange}>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="30">30</option>
+                </select>
+              </div>
+
+              {repos.map(repo => (
+                <RepoCard key={repo.id} repo={repo} />
+              ))}
+            </React.Fragment>
+          )}
         </div>
       </div>
     );
