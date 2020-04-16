@@ -2,7 +2,7 @@ import React from 'react';
 
 const UserCard = ({ user }) => {
   return (
-    <div className="card">
+    <div className="card mb-4">
       <div className="card-body">
         <div className="d-flex">
           <img className="img-round user-image mr-5" src={user.avatar_url} />

@@ -16,3 +16,12 @@ code {
   width: 100px;
   height: 100px;
 }
+
+a {
+  color: inherit !important;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: none !important;
+}
