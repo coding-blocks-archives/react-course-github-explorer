@@ -11,8 +11,30 @@ class App extends React.Component {
     repos: [],
     userDataError: null,
     loading: false,
-    pageSize: '10',
+    pageSize: 10,
     page: 1,
+    fetchingRepos: false,
+  };
+
+  componentDidMount() {
+    window.addEventListener('scroll', this.handleScroll);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.hanleScroll);
+  }
+
+  handleScroll = () => {
+    const currentScroll = window.scrollY;
+    const maxScroll = window.scrollMaxY;
+    const { page, pageSize, user } = this.state;
+
+    if (
+      user &&
+      maxScroll - currentScroll <= 100 &&
+      (page - 1) * pageSize < user.public_repos
+    )
+      this.loadPage();
   };
 
   fetchUserData = async username => {
@@ -56,6 +78,7 @@ class App extends React.Component {
           return this.setState({
             user: user.data,
             repos: repos.data,
+            page: 2,
             loading: false,
           });
         }
@@ -75,38 +98,22 @@ class App extends React.Component {
   };
 
   loadPage = async () => {
-    const { data } = await this.fetchRepos(
-      this.state.user.login,
-      this.state.page,
-    );
+    if (this.state.fetchingRepos === true) return;
 
-    if (data)
-      this.setState(state => ({
-        repos: data,
-      }));
+    this.setState({ fetchingRepos: true }, async () => {
+      const { data } = await this.fetchRepos(this.state.user.login);
+
+      if (data)
+        this.setState(state => ({
+          repos: [...state.repos, ...data],
+          page: state.page + 1,
+          fetchingRepos: false,
+        }));
+    });
   };
-
-  handlePageChange = page => {
-    this.setState({ page }, () => this.loadPage());
-  };
-
-  handlePageSizeChange = e =>
-    this.setState(
-      {
-        pageSize: e.target.value,
-      },
-      () => this.loadPage(),
-    );
 
   render() {
-    const {
-      userDataError,
-      reposError,
-      loading,
-      user,
-      repos,
-      pageSize,
-    } = this.state;
+    const { userDataError, reposError, loading, user, repos } = this.state;
 
     const renderRepos = !loading && !reposError && !!repos.length;
 
@@ -123,30 +130,6 @@ class App extends React.Component {
 
           {renderRepos && (
             <React.Fragment>
-              <div className="mb-4">
-                {[...new Array(Math.ceil(user.public_repos / pageSize))].map(
-                  (_, index) => (
-                    <button
-                      key={index}
-                      className="btn btn-success mr-2"
-                      onClick={() => this.handlePageChange(index + 1)}>
-                      {index + 1}
-                    </button>
-                  ),
-                )}
-              </div>
-
-              <div className="d-inline-block mb-4">
-                <select
-                  className="form-control"
-                  value={pageSize}
-                  onChange={this.handlePageSizeChange}>
-                  <option value="10">10</option>
-                  <option value="20">20</option>
-                  <option value="30">30</option>
-                </select>
-              </div>
-
               {repos.map(repo => (
                 <RepoCard key={repo.id} repo={repo} />
               ))}
