@@ -2,6 +2,7 @@ import React from 'react';
 import Search from './components/Search';
 import UserCard from './components/UserCard';
 import RepoCard from './components/RepoCard';
+import { withRouter } from 'react-router-dom';
 
 const PAGE_SIZE = 10;
 
@@ -18,6 +19,9 @@ class App extends React.Component {
 
   componentDidMount() {
     window.addEventListener('scroll', this.handleScroll);
+    const { match } = this.props;
+
+    if (match.params.username) this.fetchData(match.params.username);
   }
 
   componentWillUnmount() {
@@ -67,34 +71,37 @@ class App extends React.Component {
   };
 
   fetchData = async username => {
-    this.setState({ loading: true }, async () => {
-      try {
-        const [user, repos] = await Promise.all([
-          this.fetchUserData(username),
-          this.fetchRepos(username),
-        ]);
+    this.setState(
+      { loading: true, userDataError: null, reposError: null },
+      async () => {
+        try {
+          const [user, repos] = await Promise.all([
+            this.fetchUserData(username),
+            this.fetchRepos(username),
+          ]);
 
-        if (user.data !== undefined && repos.data !== undefined) {
-          return this.setState({
-            user: user.data,
-            repos: repos.data,
-            page: 2,
+          if (user.data !== undefined && repos.data !== undefined) {
+            return this.setState({
+              user: user.data,
+              repos: repos.data,
+              page: 2,
+              loading: false,
+            });
+          }
+
+          this.setState({
+            userDataError: user.error,
+            reposError: repos.error,
+            loading: false,
+          });
+        } catch (err) {
+          this.setState({
+            error: 'There was some error',
             loading: false,
           });
         }
-
-        this.setState({
-          userDataError: user.error,
-          reposError: repos.error,
-          loading: false,
-        });
-      } catch (err) {
-        this.setState({
-          error: 'There was some error',
-          loading: false,
-        });
-      }
-    });
+      },
+    );
   };
 
   loadPage = async () => {
@@ -114,12 +121,13 @@ class App extends React.Component {
 
   render() {
     const { userDataError, reposError, loading, user, repos } = this.state;
+    const { match } = this.props;
 
     const renderRepos = !loading && !reposError && !!repos.length;
 
     return (
-      <div>
-        <Search fetchData={this.fetchData} />
+      <>
+        <Search username={match.params.username} />
         <div className="container">
           <div className="text-center pt-5">
             {loading && <p>Loading...</p>}
@@ -136,9 +144,9 @@ class App extends React.Component {
             </React.Fragment>
           )}
         </div>
-      </div>
+      </>
     );
   }
 }
 
-export default App;
+export default withRouter(App);

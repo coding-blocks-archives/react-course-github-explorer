@@ -1,20 +1,25 @@
-import React from "react";
+import React from 'react';
+import { withRouter } from 'react-router-dom';
 
 class Search extends React.Component {
-  state = {
-    username: ""
-  };
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      username: props.username || '',
+    };
+  }
 
   handleUserNameChange = e => {
     const value = e.target.value;
 
     this.setState({
-      username: value
+      username: value,
     });
   };
 
   render() {
-    const { fetchData } = this.props;
+    const { history } = this.props;
     const { username } = this.state;
 
     return (
@@ -34,7 +39,11 @@ class Search extends React.Component {
                   />
                 </div>
                 <div className="col-3">
-                  <button onClick={() => fetchData(username)} className="btn btn-large btn-success">Search</button>
+                  <button
+                    onClick={() => history.push(`/${username}`)}
+                    className="btn btn-large btn-success">
+                    Search
+                  </button>
                 </div>
               </div>
             </div>
@@ -45,4 +54,4 @@ class Search extends React.Component {
   }
 }
 
-export default Search;
+export default withRouter(Search);
